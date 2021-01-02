@@ -375,7 +375,7 @@ public:
 	bool repairing;
 
 	//Set repairing way (0 - off, 1 - on(with repair materials + credits if health is full), 2 - nomoney(with repair materials only))
-	int set_repairing_way = 1;
+	int set_repairing_way = 2;
 
 	// The state of the shield
 	static const int SHIELD_STATE_OFFLINE = 0;

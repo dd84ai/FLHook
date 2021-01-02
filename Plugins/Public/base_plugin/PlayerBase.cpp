@@ -270,7 +270,7 @@ void PlayerBase::Load()
 
 						if (set_repairing_way <0 || set_repairing_way >=2)
 						{
-							set_repairing_way = 1;
+							set_repairing_way = 2;
 						}
 					}
 					else if (ini.is_value("ally_tag"))

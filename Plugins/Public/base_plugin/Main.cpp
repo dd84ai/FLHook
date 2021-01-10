@@ -1291,9 +1291,6 @@ void __stdcall BaseEnter(uint base, uint client)
 
 	returncode = DEFAULT_RETURNCODE;
 
-	clients[client].admin = false;
-	clients[client].viewshop = false;
-
 	// If the last player base is set then we have not docked at a non player base yet.
 	if (clients[client].last_player_base)
 	{
@@ -1308,6 +1305,12 @@ void __stdcall BaseEnter(uint base, uint client)
 		PlayerBase *base = GetPlayerBaseForClient(client);
 		if (base)
 		{
+			if (base->is_it_storage)
+			{
+				clients[client].admin = true;
+				clients[client].viewshop = true;
+			}
+
 			// Reset the commodity list	and send a dummy entry if there are no
 			// commodities in the market
 			SaveDockState(client);

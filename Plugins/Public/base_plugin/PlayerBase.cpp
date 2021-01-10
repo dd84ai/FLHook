@@ -43,6 +43,8 @@ PlayerBase::PlayerBase(const string &the_path, bool is_it_storage_in)
 	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE),
 	storage_level(1)
 {
+	is_it_storage = is_it_storage_in;
+
 	// Load and spawn base modules
 	Load();
 

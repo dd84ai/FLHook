@@ -1519,11 +1519,11 @@ namespace PlayerCommands
 			wstos(HkGetAccountID(HkGetAccountByCharname(charname))).c_str());
 
 		PlayerBase *newbase = new PlayerBase(client, password, basename);
-		player_bases[newbase->base] = newbase;
+		//player_bases[newbase->base] = newbase;
 		newbase->basetype = "legacy";
 		newbase->basesolar = "legacy";
 		newbase->baseloadout = "legacy";
-		newbase->defense_mode = 1;
+		newbase->defense_mode = 5;
 
 		for (map<string, ARCHTYPE_STRUCT>::iterator iter = mapArchs.begin(); iter != mapArchs.end(); iter++)
 		{
@@ -1546,6 +1546,100 @@ namespace PlayerCommands
 	{
 		const wstring& cmd = GetParam(args, ' ', 1);
 		if (cmd == L"create")
+		{
+			uint conn_system = 2745655887; //Only allowed in conn system
+			uint system = 0;
+			pub::Player::GetSystem(client, system);
+			//PrintUserCmdText(client, L"system = %u", system);
+			if (system != conn_system)
+			{
+				PrintUserCmdText(client, L"ERR Not in conn");
+				return;
+			}
+
+			uint ship;
+			pub::Player::GetShip(client, ship);
+			if (!ship)
+			{
+				PrintUserCmdText(client, L"ERR Not in space");
+				return;
+			}
+
+			wstring password = GetParam(args, ' ', 2);
+			if (!password.length())
+			{
+				PrintUserCmdText(client, L"ERR No password");
+				PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+				return;
+			}
+
+			wstring basename = GetParamToEnd(args, ' ', 3);
+			if (!basename.length())
+			{
+				PrintUserCmdText(client, L"ERR No storage name");
+				PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+				return;
+			}
+
+			// Check for conflicting base name
+			char datapath[MAX_PATH];
+			GetUserDataPath(datapath);
+
+			string nickname = PlayerBase::CreateBaseNickname(wstos(basename));
+			uint base = CreateID(nickname.c_str());
+
+			char tpath[1024];
+			sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
+			string path = tpath;
+
+			WIN32_FIND_DATA findfile;
+			HANDLE h = FindFirstFile(path.c_str(), &findfile);
+			if (h != INVALID_HANDLE_VALUE)
+			{
+				PrintUserCmdText(client, L"ERR Storage name already exists");
+				return;
+			}
+
+			// Check that the ship has the requires commodities.
+
+			//TODO CHECK FOR ENOUGH MONEY AND REMOVE THEM
+
+			wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
+			AddLog("NOTICE: Base created %s by %s (%s)",
+				wstos(basename).c_str(),
+				wstos(charname).c_str(),
+				wstos(HkGetAccountID(HkGetAccountByCharname(charname))).c_str());
+
+			PlayerBase* newbase = new PlayerBase(client, password, basename, true);
+			player_bases[newbase->base] = newbase;
+			newbase->basetype = "legacy";
+			newbase->basesolar = "legacy";
+			newbase->baseloadout = "legacy";
+			newbase->defense_mode = 1;
+
+			for (map<string, ARCHTYPE_STRUCT>::iterator iter = mapArchs.begin(); iter != mapArchs.end(); iter++)
+			{
+
+				ARCHTYPE_STRUCT& thearch = iter->second;
+				if (iter->first == newbase->basetype)
+				{
+					newbase->invulnerable = thearch.invulnerable;
+					newbase->logic = thearch.logic;
+				}
+			}
+
+			//newbase->invulnerable = true;
+
+			newbase->Spawn();
+			newbase->Save();
+
+			PrintUserCmdText(client, L"OK: Storage deployed");
+			PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
+
+			UnloadBase(newbase);
+			PrintUserCmdText(client, L"OK: Storage is unloaded");
+		}
+		else if (cmd == L"enter")
 		{
 			uint conn_system = 2745655887; //Only allowed in conn system
 			uint system = 0;
@@ -1589,40 +1683,69 @@ namespace PlayerCommands
 				return;
 			}
 
-			// Check that the ship has the requires commodities.
+			char datapath[MAX_PATH];
+			GetUserDataPath(datapath);
 
-			//TODO CHECK FOR ENOUGH MONEY AND REMOVE THEM
+			// Create base account dir if it doesn't exist
+			string basedir = string(datapath) + "\\Accts\\MultiPlayer\\storages\\";
+			CreateDirectoryA(basedir.c_str(), 0);
 
-			wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
-			AddLog("NOTICE: Base created %s by %s (%s)",
-				wstos(basename).c_str(),
-				wstos(charname).c_str(),
-				wstos(HkGetAccountID(HkGetAccountByCharname(charname))).c_str());
+			string nickname = PlayerBase::CreateBaseNickname(wstos(basename)).c_str();
 
-			PlayerBase* newbase = new PlayerBase(client, password, basename);
-			player_bases[newbase->base] = newbase;
-			newbase->basetype = "legacy";
-			newbase->basesolar = "legacy";
-			newbase->baseloadout = "legacy";
-			newbase->defense_mode = 1;
+			// Load and spawn all bases
+			string path = string(datapath) + "\\Accts\\MultiPlayer\\storages\\base_" + nickname  +".ini";
 
-			for (map<string, ARCHTYPE_STRUCT>::iterator iter = mapArchs.begin(); iter != mapArchs.end(); iter++)
+			PrintUserCmdText(client, L"path = %s", path);
+
+			WIN32_FIND_DATA findfile;
+			HANDLE h = FindFirstFile(path.c_str(), &findfile);
+			if (h != INVALID_HANDLE_VALUE)
 			{
-
-				ARCHTYPE_STRUCT& thearch = iter->second;
-				if (iter->first == newbase->basetype)
+				do
 				{
-					newbase->invulnerable = thearch.invulnerable;
-					newbase->logic = thearch.logic;
+					string filepath = string(datapath) + "\\Accts\\MultiPlayer\\player_bases\\" + findfile.cFileName;
+					PlayerBase* base = new PlayerBase(filepath);
+					player_bases[base->base] = base;
+					base->Spawn();
+				} while (FindNextFile(h, &findfile));
+				FindClose(h);
+			}
+
+			// Load and sync player state
+			struct PlayerData* pd = 0;
+			while (pd = Players.traverse_active(pd))
+			{
+				uint client = pd->iOnlineID;
+				if (HkIsInCharSelectMenu(client))
+					continue;
+
+				// If this player is in space, set the reputations.
+				//if (pd->iShipID)
+				//	SyncReputationForClientShip(pd->iShipID, client);
+
+				// Get state if player is in player base and  reset the commodity list
+				// and send a dummy entry if there are no commodities in the market
+				LoadDockState(client);
+				if (clients[client].player_base)
+				{
+					PlayerBase* base = GetPlayerBaseForClient(client);
+					if (base)
+					{
+						// Reset the commodity list	and send a dummy entry if there are no
+						// commodities in the market
+						SaveDockState(client);
+						SendMarketGoodSync(base, client);
+						SendBaseStatus(client, base);
+					}
+					else
+					{
+						// Force the ship to launch to space as the base has been destroyed
+						DeleteDockState(client);
+						SendResetMarketOverride(client);
+						ForceLaunch(client);
+					}
 				}
 			}
-			newbase->Spawn();
-			newbase->Save();
-
-			PrintUserCmdText(client, L"OK: Base deployed");
-			PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
-
-			//TODO unload the base
 		}
 		else
 		{

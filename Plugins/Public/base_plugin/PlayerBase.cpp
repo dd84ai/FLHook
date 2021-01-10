@@ -1,13 +1,15 @@
 #include "Main.h"
 
-PlayerBase::PlayerBase(uint client, const wstring &password, const wstring &the_basename)
+PlayerBase::PlayerBase(uint client, const wstring &password, const wstring &the_basename, bool is_it_storage_in)
 	: basename(the_basename),
 	base(0), money(0), base_health(0),
 	base_level(1), defense_mode(0), proxy_base(0), affiliation(0),
-	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE)
+	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE),
+	is_it_storage(false)
 {
 	nickname = CreateBaseNickname(wstos(basename));
 	base = CreateID(nickname.c_str());
+	is_it_storage = is_it_storage_in;
 
 	// The creating ship is an ally by default.
 	BasePassword bp;
@@ -35,7 +37,7 @@ PlayerBase::PlayerBase(uint client, const wstring &password, const wstring &the_
 	save_timer = rand() % 60;
 }
 
-PlayerBase::PlayerBase(const string &the_path)
+PlayerBase::PlayerBase(const string &the_path, bool is_it_storage_in)
 	: path(the_path), base(0), money(0),
 	base_health(0), base_level(0), defense_mode(0), proxy_base(0), affiliation(0),
 	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE)
@@ -122,7 +124,12 @@ void PlayerBase::SetupDefaults()
 		GetUserDataPath(datapath);
 
 		char tpath[1024];
-		sprintf(tpath, "%s\\Accts\\MultiPlayer\\player_bases\\base_%08x.ini", datapath, base);
+		
+		if (is_it_storage)
+			sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
+		else
+			sprintf(tpath, "%s\\Accts\\MultiPlayer\\player_bases\\base_%08x.ini", datapath, base);
+
 		path = tpath;
 	}
 

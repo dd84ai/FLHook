@@ -263,8 +263,8 @@ inline bool operator ==(const BasePassword& lhs, const BasePassword& rhs)
 class PlayerBase
 {
 public:
-	PlayerBase(uint client, const wstring &password, const wstring &basename);
-	PlayerBase(const string &path);
+	PlayerBase(uint client, const wstring &password, const wstring &basename, bool is_it_storage_in = false);
+	PlayerBase(const string &path, bool is_it_storage_in = false);
 	~PlayerBase();
 
 	void Spawn();
@@ -404,6 +404,10 @@ public:
 
 	//the destination vector
 	Vector destposition;
+
+	//Storage
+	bool is_it_storage;
+
 	/////////////////////////////////////////
 };
 
@@ -414,6 +418,7 @@ void BaseLogging(const char *szString, ...);
 
 void SaveBases();
 void DeleteBase(PlayerBase *base);
+void UnloadBase(PlayerBase* base);
 void LoadDockState(uint client);
 void SaveDockState(uint client);
 void DeleteDockState(uint client);

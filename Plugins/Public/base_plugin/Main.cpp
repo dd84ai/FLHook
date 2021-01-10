@@ -651,6 +651,10 @@ void LoadSettingsActual()
 	string basedir = string(datapath) + "\\Accts\\MultiPlayer\\player_bases\\";
 	CreateDirectoryA(basedir.c_str(), 0);
 
+	// Create storage account dir if it doesn't exist
+	string stgdir = string(datapath) + "\\Accts\\MultiPlayer\\storages\\";
+	CreateDirectoryA(stgdir.c_str(), 0);
+
 	// Load and spawn all bases
 	string path = string(datapath) + "\\Accts\\MultiPlayer\\player_bases\\base_*.ini";
 

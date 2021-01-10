@@ -1544,7 +1544,6 @@ namespace PlayerCommands
 
 	void StorageOperations(uint client, const wstring& args)
 	{
-		uint conn_system = 2745655887;
 		const wstring& cmd = GetParam(args, ' ', 1);
 		if (cmd == L"create")
 		{
@@ -1552,7 +1551,7 @@ namespace PlayerCommands
 			uint system = 0;
 			pub::Player::GetSystem(client, system);
 			//PrintUserCmdText(client, L"system = %u", system);
-			if (system != conn_system)
+			if (system != set_StorageAllowed_system)
 			{
 				PrintUserCmdText(client, L"ERR Not in conn");
 				return;
@@ -1582,6 +1581,23 @@ namespace PlayerCommands
 				return;
 			}
 
+			wstring wscCharname = (const wchar_t*)Players.GetActiveCharacterName(client);
+			// Read the current number of credits for the player
+			// and check that the character has enough cash.
+			int iCash = 0;
+			HK_ERROR err;
+			if ((err = HkGetCash(wscCharname, iCash)) != HKE_OK)
+			{
+				PrintUserCmdText(client, L"ERR (1) %s", HkErrGetText(err).c_str());
+				return;
+			}
+
+			if (set_StorageCreateCost > 0 && iCash < set_StorageCreateCost)
+			{
+				PrintUserCmdText(client, L"ERR Insufficient credits");
+				return;
+			}
+
 			// Check for conflicting base name
 			char datapath[MAX_PATH];
 			GetUserDataPath(datapath);
@@ -1602,8 +1618,6 @@ namespace PlayerCommands
 			}
 
 			// Check that the ship has the requires commodities.
-
-			//TODO CHECK FOR ENOUGH MONEY AND REMOVE THEM
 
 			wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
 			AddLog("NOTICE: Base created %s by %s (%s)",
@@ -1637,6 +1651,12 @@ namespace PlayerCommands
 			PrintUserCmdText(client, L"OK: Storage deployed");
 			PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
 
+			// Remove cash if we're charging for it.
+			if (set_StorageCreateCost > 0)
+			{
+				HkAddCash(wscCharname, 0 - set_StorageCreateCost);
+			}
+
 			UnloadBase(newbase);
 			PrintUserCmdText(client, L"OK: Storage is unloaded");
 		}
@@ -1644,7 +1664,7 @@ namespace PlayerCommands
 		{
 			uint system = 0;
 			pub::Player::GetSystem(client, system);
-			if (system != conn_system)
+			if (system != set_StorageAllowed_system)
 			{
 				PrintUserCmdText(client, L"ERR Not in conn");
 				return;
@@ -1703,6 +1723,7 @@ namespace PlayerCommands
 				PrintUserCmdText(client, L"ERR Storage name does not exist");
 				return;
 			}
+
 			else
 			{
 				do
@@ -1716,6 +1737,114 @@ namespace PlayerCommands
 				} while (FindNextFile(h, &findfile));
 				FindClose(h);
 			}
+		}
+		else if (cmd == L"upgrade")
+		{
+		uint system = 0;
+		pub::Player::GetSystem(client, system);
+		if (system != set_StorageAllowed_system)
+		{
+			PrintUserCmdText(client, L"ERR Not in conn");
+			return;
+		}
+
+		uint ship;
+		pub::Player::GetShip(client, ship);
+		if (!ship)
+		{
+			PrintUserCmdText(client, L"ERR Not in space");
+			return;
+		}
+
+		wstring password = GetParam(args, ' ', 2);
+		if (!password.length())
+		{
+			PrintUserCmdText(client, L"ERR No password");
+			PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+			return;
+		}
+
+		wstring basename = GetParamToEnd(args, ' ', 3);
+		if (!basename.length())
+		{
+			PrintUserCmdText(client, L"ERR No base name");
+			PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+			return;
+		}
+
+		wstring wscCharname = (const wchar_t*)Players.GetActiveCharacterName(client);
+		// Read the current number of credits for the player
+		// and check that the character has enough cash.
+		int iCash = 0;
+		HK_ERROR err;
+		if ((err = HkGetCash(wscCharname, iCash)) != HKE_OK)
+		{
+			PrintUserCmdText(client, L"ERR (1) %s", HkErrGetText(err).c_str());
+			return;
+		}
+
+		if (set_StorageUpgradeCost > 0 && iCash < set_StorageUpgradeCost)
+		{
+			PrintUserCmdText(client, L"ERR Insufficient credits");
+			return;
+		}
+
+		// Check for conflicting base name
+		char datapath[MAX_PATH];
+		GetUserDataPath(datapath);
+
+		string nickname = PlayerBase::CreateBaseNickname(wstos(basename));
+		uint base = CreateID(nickname.c_str());
+
+		if (player_bases.find(base) != player_bases.end())
+		{
+			wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
+			wstring spurdoip;
+			HkGetPlayerIP(client, spurdoip);
+			AddLog("STORAGE: Attempt to enter already busy storage %s from IP %s", wstos(charname).c_str(), wstos(spurdoip).c_str());
+			ConPrint(L"STORAGE: Attempt to enter already busy storage %s from IP %s\n", charname.c_str(), spurdoip.c_str());
+			PrintUserCmdText(client, L"ERR: Trying to enter already loaded storage. FBI has been notified");
+			return;
+		}
+
+		char tpath[1024];
+		sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
+		string path = tpath;
+
+		WIN32_FIND_DATA findfile;
+		HANDLE h = FindFirstFile(path.c_str(), &findfile);
+		if (h == INVALID_HANDLE_VALUE)
+		{
+			PrintUserCmdText(client, L"ERR Storage name does not exist");
+			return;
+		}
+
+		else
+		{
+			do
+			{
+				string filepath = string(datapath) + "\\Accts\\MultiPlayer\\storages\\" + findfile.cFileName;
+				PlayerBase* base = new PlayerBase(filepath, true);
+				player_bases[base->base] = base;
+				base->Spawn();
+				
+				if (base->storage_level < set_StorageMaxLevel)
+					base->storage_level = base->storage_level + 1;
+
+				UnloadBase(base);
+
+				// Remove cash if we're charging for it.
+				if (set_StorageUpgradeCost > 0)
+				{
+					HkAddCash(wscCharname, 0 - set_StorageUpgradeCost);
+				}
+
+				PrintUserCmdText(client, L"OK storage has been upgraded");
+
+				break;
+			} while (FindNextFile(h, &findfile));
+			FindClose(h);
+		}
 		}
 		else
 		{

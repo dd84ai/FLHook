@@ -5,7 +5,7 @@ PlayerBase::PlayerBase(uint client, const wstring &password, const wstring &the_
 	base(0), money(0), base_health(0),
 	base_level(1), defense_mode(0), proxy_base(0), affiliation(0),
 	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE),
-	is_it_storage(false)
+	is_it_storage(false), storage_level(1)
 {
 	nickname = CreateBaseNickname(wstos(basename));
 	base = CreateID(nickname.c_str());
@@ -40,7 +40,8 @@ PlayerBase::PlayerBase(uint client, const wstring &password, const wstring &the_
 PlayerBase::PlayerBase(const string &the_path, bool is_it_storage_in)
 	: path(the_path), base(0), money(0),
 	base_health(0), base_level(0), defense_mode(0), proxy_base(0), affiliation(0),
-	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE)
+	repairing(false), shield_active_time(0), shield_state(PlayerBase::SHIELD_STATE_OFFLINE),
+	storage_level(1)
 {
 	// Load and spawn base modules
 	Load();
@@ -199,6 +200,10 @@ void PlayerBase::Load()
 					else if (ini.is_value("affiliation"))
 					{
 						affiliation = ini.get_value_int(0);
+					}
+					else if (ini.is_value("storage_level"))
+					{
+						storage_level = ini.get_value_int(0);
 					}
 					else if (ini.is_value("system"))
 					{
@@ -373,6 +378,7 @@ void PlayerBase::Save()
 		fprintf(file, "baseloadout = %s\n", baseloadout.c_str());
 		fprintf(file, "upgrade = %u\n", base_level);
 		fprintf(file, "affiliation = %u\n", affiliation);
+		fprintf(file, "storage_level = %u\n", storage_level);
 		fprintf(file, "logic = %u\n", logic);
 		fprintf(file, "invulnerable = %u\n", invulnerable);
 
@@ -489,6 +495,9 @@ uint PlayerBase::GetRemainingCargoSpace()
 
 uint PlayerBase::GetMaxCargoSpace()
 {
+	if (is_it_storage)
+		return 1000 * storage_level;
+
 	uint max_capacity = 30000;
 	for (vector<Module*>::iterator i = modules.begin(); i != modules.end(); ++i)
 	{

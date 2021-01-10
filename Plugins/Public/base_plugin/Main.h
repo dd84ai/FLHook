@@ -407,6 +407,7 @@ public:
 
 	//Storage
 	bool is_it_storage;
+	uint storage_level;
 
 	/////////////////////////////////////////
 };
@@ -592,6 +593,12 @@ extern float set_shield_damage_multiplier;
 
 /// Holiday mode
 extern bool set_holiday_mode;
+
+/// Storages
+extern uint set_StorageAllowed_system;
+extern uint set_StorageMaxLevel;
+extern int set_StorageCreateCost;
+extern int set_StorageUpgradeCost;
 
 wstring HtmlEncode(wstring text);
 

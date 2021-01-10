@@ -104,6 +104,12 @@ map<string, ARCHTYPE_STRUCT> mapArchs;
 //commodities to watch for logging
 map<uint, wstring> listCommodities;
 
+//Storages
+uint set_StorageAllowed_system = 2745655887; //conn
+uint set_StorageMaxLevel = 10;
+int set_StorageCreateCost = 100000000; //100'000'000
+int set_StorageUpgradeCost = 100000000; //100'000'000
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PlayerBase *GetPlayerBase(uint base)

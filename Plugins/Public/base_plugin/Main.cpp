@@ -2337,7 +2337,7 @@ bool ExecuteCommandString_Callback(CCmds* cmd, const wstring &args)
 
 
 		// Check for conflicting base name
-		if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
+		if (PlayerCommands::CheckForConflictingBasename(basename))
 		{
 			PrintUserCmdText(client, L"ERR Base name already exists");
 			return true;
@@ -2448,7 +2448,7 @@ bool ExecuteCommandString_Callback(CCmds* cmd, const wstring &args)
 
 
 		// Check for conflicting base name
-		if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
+		if (PlayerCommands::CheckForConflictingBasename(basename))
 		{
 			PrintUserCmdText(client, L"ERR Base name already exists");
 			return true;

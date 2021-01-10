@@ -515,6 +515,7 @@ namespace PlayerCommands
 	void Shop(uint client, const wstring &args);
 
 	void BaseDeploy(uint client, const wstring &args);
+	bool CheckForConflictingBasename(wstring basename);
 	void StorageOperations(uint client, const wstring& args);
 }
 

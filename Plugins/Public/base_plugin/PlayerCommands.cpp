@@ -1474,7 +1474,7 @@ namespace PlayerCommands
 		}
 
 		// Check for conflicting base name
-		if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
+		if (CheckForConflictingBasename(basename))
 		{
 			PrintUserCmdText(client, L"ERR Base name already exists");
 			return;
@@ -1540,6 +1540,34 @@ namespace PlayerCommands
 
 		PrintUserCmdText(client, L"OK: Base deployed");
 		PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
+	}
+
+	bool CheckForConflictingBasename(wstring basename)
+	{
+		// Check for conflicting base name
+		if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
+		{
+			return true;
+		}
+
+		// Check for conflicting base name
+		char datapath[MAX_PATH];
+		GetUserDataPath(datapath);
+
+		string nickname = PlayerBase::CreateBaseNickname(wstos(basename));
+		uint base = CreateID(nickname.c_str());
+
+		char tpath[1024];
+		sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
+		string path = tpath;
+
+		WIN32_FIND_DATA findfile;
+		HANDLE h = FindFirstFile(path.c_str(), &findfile);
+		if (h != INVALID_HANDLE_VALUE)
+		{
+			return true;
+		}
+		return false;
 	}
 
 	void StorageOperations(uint client, const wstring& args)

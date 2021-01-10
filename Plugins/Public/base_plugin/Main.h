@@ -601,6 +601,11 @@ extern uint set_StorageMaxLevel;
 extern int set_StorageCreateCost;
 extern int set_StorageUpgradeCost;
 
+extern bool set_bLocalTime;
+
+/// Local chat range
+extern float set_iLocalChatRange;
+
 wstring HtmlEncode(wstring text);
 
 extern string set_status_path_html;

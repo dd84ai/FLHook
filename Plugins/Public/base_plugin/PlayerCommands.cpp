@@ -1677,6 +1677,12 @@ namespace PlayerCommands
 			newbase->Spawn();
 			newbase->Save();
 
+			// Print out a message when a player ship docks.
+			wstring wscMsg = L"%time Traffic control alert: %player has requested to create storage";
+			wscMsg = ReplaceStr(wscMsg, L"%time", GetTimeString(set_bLocalTime));
+			wscMsg = ReplaceStr(wscMsg, L"%player", (const wchar_t*)Players.GetActiveCharacterName(client));
+			PrintLocalUserCmdText(client, wscMsg, set_iLocalChatRange);
+
 			PrintUserCmdText(client, L"OK: Storage deployed");
 			PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
 
@@ -1761,6 +1767,13 @@ namespace PlayerCommands
 					PlayerBase* base = new PlayerBase(filepath, true);
 					player_bases[base->base] = base;
 					base->Spawn();
+
+					// Print out a message
+					wstring wscMsg = L"%time Traffic control alert: %player has requested to dock storage";
+					wscMsg = ReplaceStr(wscMsg, L"%time", GetTimeString(set_bLocalTime));
+					wscMsg = ReplaceStr(wscMsg, L"%player", (const wchar_t*)Players.GetActiveCharacterName(client));
+					PrintLocalUserCmdText(client, wscMsg, set_iLocalChatRange);
+
 					ForcePlayerBaseDock(client, base);
 					break;
 				} while (FindNextFile(h, &findfile));

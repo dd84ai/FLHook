@@ -110,6 +110,11 @@ uint set_StorageMaxLevel = 10;
 int set_StorageCreateCost = 100000000; //100'000'000
 int set_StorageUpgradeCost = 100000000; //100'000'000
 
+bool set_bLocalTime = false;
+
+/// Local chat range
+float set_iLocalChatRange = 9999;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PlayerBase *GetPlayerBase(uint base)

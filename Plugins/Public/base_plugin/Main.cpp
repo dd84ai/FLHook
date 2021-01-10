@@ -1015,6 +1015,12 @@ bool UserCmd_Process(uint client, const wstring &args)
 		PlayerCommands::BaseDeploy(client, args);
 		return true;
 	}
+	else if (args.find(L"/stg") == 0)
+	{
+		returncode = SKIPPLUGINS_NOFUNCTIONCALL;
+		PlayerCommands::StorageOperations(client, args);
+		return true;
+	}
 	else if (args.find(L"/shop") == 0)
 	{
 		returncode = SKIPPLUGINS_NOFUNCTIONCALL;

@@ -1541,4 +1541,94 @@ namespace PlayerCommands
 		PrintUserCmdText(client, L"OK: Base deployed");
 		PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
 	}
+
+	void StorageOperations(uint client, const wstring& args)
+	{
+		const wstring& cmd = GetParam(args, ' ', 1);
+		if (cmd == L"create")
+		{
+			uint conn_system = 2745655887; //Only allowed in conn system
+			uint system = 0;
+			pub::Player::GetSystem(client, system);
+			PrintUserCmdText(client, L"system = %u", system);
+			if (system != conn_system)
+			{
+				PrintUserCmdText(client, L"ERR Not in conn");
+				return;
+			}
+
+			uint ship;
+			pub::Player::GetShip(client, ship);
+			if (!ship)
+			{
+				PrintUserCmdText(client, L"ERR Not in space");
+				return;
+			}
+
+			wstring password = GetParam(args, ' ', 2);
+			if (!password.length())
+			{
+				PrintUserCmdText(client, L"ERR No password");
+				PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+				return;
+			}
+
+			wstring basename = GetParamToEnd(args, ' ', 3);
+			if (!basename.length())
+			{
+				PrintUserCmdText(client, L"ERR No base name");
+				PrintUserCmdText(client, L"Usage: /stg create <password> <name>");
+				return;
+			}
+
+			// Check for conflicting base name
+			//TODO make sure we can check even for unloaded bases.
+			if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
+			{
+				PrintUserCmdText(client, L"ERR Base name already exists");
+				return;
+			}
+
+			// Check that the ship has the requires commodities.
+
+			//TODO CHECK FOR ENOUGH MONEY AND REMOVE THEM
+
+			wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
+			AddLog("NOTICE: Base created %s by %s (%s)",
+				wstos(basename).c_str(),
+				wstos(charname).c_str(),
+				wstos(HkGetAccountID(HkGetAccountByCharname(charname))).c_str());
+
+			PlayerBase* newbase = new PlayerBase(client, password, basename);
+			player_bases[newbase->base] = newbase;
+			newbase->basetype = "legacy";
+			newbase->basesolar = "legacy";
+			newbase->baseloadout = "legacy";
+			newbase->defense_mode = 1;
+
+			for (map<string, ARCHTYPE_STRUCT>::iterator iter = mapArchs.begin(); iter != mapArchs.end(); iter++)
+			{
+
+				ARCHTYPE_STRUCT& thearch = iter->second;
+				if (iter->first == newbase->basetype)
+				{
+					newbase->invulnerable = thearch.invulnerable;
+					newbase->logic = thearch.logic;
+				}
+			}
+			newbase->Spawn();
+			newbase->Save();
+
+			PrintUserCmdText(client, L"OK: Base deployed");
+			PrintUserCmdText(client, L"Default administration password is %s", password.c_str());
+
+			//TODO unload the base
+		}
+		else
+		{
+			PrintUserCmdText(client, L"ERR: Incorrect command, write right one");
+			PrintUserCmdText(client, L"/stg create <name> <password>");
+			PrintUserCmdText(client, L"/stg enter <name> <password>");
+		}
+	}
 }

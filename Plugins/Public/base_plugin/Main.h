@@ -507,6 +507,7 @@ namespace PlayerCommands
 	void Shop(uint client, const wstring &args);
 
 	void BaseDeploy(uint client, const wstring &args);
+	void StorageOperations(uint client, const wstring& args);
 }
 
 namespace Log {

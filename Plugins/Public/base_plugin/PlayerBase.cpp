@@ -52,6 +52,14 @@ PlayerBase::PlayerBase(const string &the_path, bool is_it_storage_in)
 	SetupDefaults();
 
 	save_timer = rand() % 60;
+
+	if (is_it_storage)
+	{
+		basetype = "storage";
+		basesolar = "invisible_base";
+		baseloadout = "null_loadout";
+		invulnerable = true;
+	}
 }
 
 PlayerBase::~PlayerBase()

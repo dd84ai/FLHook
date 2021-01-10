@@ -456,7 +456,7 @@ void CoreModule::RepairDamage(float max_base_health)
 
 bool CoreModule::Timer(uint time)
 {
-	if (space_obj && set_holiday_mode)
+	if (space_obj && (set_holiday_mode || base->is_it_storage))
 	{
 		//force the base to keep max health
 		base->base_health = base->max_base_health;
@@ -604,6 +604,9 @@ bool CoreModule::SpaceObjDestroyed(uint space_obj)
 {
 	if (this->space_obj == space_obj)
 	{
+		if (base->is_it_storage) //magical protection
+			return false;
+
 		if (set_plugin_debug > 1)
 			ConPrint(L"CoreModule::destroyed space_obj=%u\n", space_obj);
 		pub::SpaceObj::LightFuse(space_obj, "player_base_explode_fuse", 0);

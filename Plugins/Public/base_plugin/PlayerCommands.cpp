@@ -1524,6 +1524,7 @@ namespace PlayerCommands
 		newbase->basesolar = "legacy";
 		newbase->baseloadout = "legacy";
 		newbase->defense_mode = 5;
+		newbase->invulnerable = true;
 
 		for (map<string, ARCHTYPE_STRUCT>::iterator iter = mapArchs.begin(); iter != mapArchs.end(); iter++)
 		{

@@ -1681,6 +1681,17 @@ namespace PlayerCommands
 			string nickname = PlayerBase::CreateBaseNickname(wstos(basename));
 			uint base = CreateID(nickname.c_str());
 
+			if (player_bases.find(base) != player_bases.end())
+			{
+				wstring charname = (const wchar_t*)Players.GetActiveCharacterName(client);
+				wstring spurdoip;
+				HkGetPlayerIP(client, spurdoip);
+				AddLog("STORAGE: Attempt to enter already busy storage %s from IP %s", wstos(charname).c_str(), wstos(spurdoip).c_str());
+				ConPrint(L"STORAGE: Attempt to enter already busy storage %s from IP %s\n", charname.c_str(), spurdoip.c_str());
+				PrintUserCmdText(client, L"ERR: Trying to enter already loaded storage. FBI has been notified");
+				return;
+			}
+
 			char tpath[1024];
 			sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
 			string path = tpath;

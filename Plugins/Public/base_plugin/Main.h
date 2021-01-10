@@ -434,6 +434,8 @@ void SendBaseStatus(uint client, PlayerBase *base);
 void SendBaseStatus(PlayerBase *base);
 void ForceLaunch(uint client);
 
+void ForcePlayerBaseDock(uint client, PlayerBase* base);
+
 struct CLIENT_DATA
 {
 	CLIENT_DATA() : reverse_sell(false), stop_buy(false), admin(false),

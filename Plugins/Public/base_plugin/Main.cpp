@@ -1922,7 +1922,7 @@ void __stdcall HkCb_AddDmgEntry(DamageList *dmg, unsigned short p1, float damage
 	}
 }
 
-static void ForcePlayerBaseDock(uint client, PlayerBase *base)
+void ForcePlayerBaseDock(uint client, PlayerBase *base)
 {
 	char system_nick[1024];
 	pub::GetSystemNickname(system_nick, sizeof(system_nick), base->system);

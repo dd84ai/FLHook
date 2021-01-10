@@ -1544,10 +1544,11 @@ namespace PlayerCommands
 
 	void StorageOperations(uint client, const wstring& args)
 	{
+		uint conn_system = 2745655887;
 		const wstring& cmd = GetParam(args, ' ', 1);
 		if (cmd == L"create")
 		{
-			uint conn_system = 2745655887; //Only allowed in conn system
+			//Only allowed in conn system
 			uint system = 0;
 			pub::Player::GetSystem(client, system);
 			//PrintUserCmdText(client, L"system = %u", system);
@@ -1641,10 +1642,8 @@ namespace PlayerCommands
 		}
 		else if (cmd == L"enter")
 		{
-			uint conn_system = 2745655887; //Only allowed in conn system
 			uint system = 0;
 			pub::Player::GetSystem(client, system);
-			PrintUserCmdText(client, L"system = %u", system);
 			if (system != conn_system)
 			{
 				PrintUserCmdText(client, L"ERR Not in conn");
@@ -1676,75 +1675,35 @@ namespace PlayerCommands
 			}
 
 			// Check for conflicting base name
-			//TODO make sure we can check even for unloaded bases.
-			if (GetPlayerBase(CreateID(PlayerBase::CreateBaseNickname(wstos(basename)).c_str())))
-			{
-				PrintUserCmdText(client, L"ERR Base name already exists");
-				return;
-			}
-
 			char datapath[MAX_PATH];
 			GetUserDataPath(datapath);
 
-			// Create base account dir if it doesn't exist
-			string basedir = string(datapath) + "\\Accts\\MultiPlayer\\storages\\";
-			CreateDirectoryA(basedir.c_str(), 0);
+			string nickname = PlayerBase::CreateBaseNickname(wstos(basename));
+			uint base = CreateID(nickname.c_str());
 
-			string nickname = PlayerBase::CreateBaseNickname(wstos(basename)).c_str();
-
-			// Load and spawn all bases
-			string path = string(datapath) + "\\Accts\\MultiPlayer\\storages\\base_" + nickname  +".ini";
-
-			PrintUserCmdText(client, L"path = %s", path);
+			char tpath[1024];
+			sprintf(tpath, "%s\\Accts\\MultiPlayer\\storages\\base_%08x.ini", datapath, base);
+			string path = tpath;
 
 			WIN32_FIND_DATA findfile;
 			HANDLE h = FindFirstFile(path.c_str(), &findfile);
-			if (h != INVALID_HANDLE_VALUE)
+			if (h == INVALID_HANDLE_VALUE)
+			{
+				PrintUserCmdText(client, L"ERR Storage name does not exist");
+				return;
+			}
+			else
 			{
 				do
 				{
-					string filepath = string(datapath) + "\\Accts\\MultiPlayer\\player_bases\\" + findfile.cFileName;
-					PlayerBase* base = new PlayerBase(filepath);
+					string filepath = string(datapath) + "\\Accts\\MultiPlayer\\storages\\" + findfile.cFileName;
+					PlayerBase* base = new PlayerBase(filepath, true);
 					player_bases[base->base] = base;
 					base->Spawn();
+					ForcePlayerBaseDock(client, base);
+					break;
 				} while (FindNextFile(h, &findfile));
 				FindClose(h);
-			}
-
-			// Load and sync player state
-			struct PlayerData* pd = 0;
-			while (pd = Players.traverse_active(pd))
-			{
-				uint client = pd->iOnlineID;
-				if (HkIsInCharSelectMenu(client))
-					continue;
-
-				// If this player is in space, set the reputations.
-				//if (pd->iShipID)
-				//	SyncReputationForClientShip(pd->iShipID, client);
-
-				// Get state if player is in player base and  reset the commodity list
-				// and send a dummy entry if there are no commodities in the market
-				LoadDockState(client);
-				if (clients[client].player_base)
-				{
-					PlayerBase* base = GetPlayerBaseForClient(client);
-					if (base)
-					{
-						// Reset the commodity list	and send a dummy entry if there are no
-						// commodities in the market
-						SaveDockState(client);
-						SendMarketGoodSync(base, client);
-						SendBaseStatus(client, base);
-					}
-					else
-					{
-						// Force the ship to launch to space as the base has been destroyed
-						DeleteDockState(client);
-						SendResetMarketOverride(client);
-						ForceLaunch(client);
-					}
-				}
 			}
 		}
 		else

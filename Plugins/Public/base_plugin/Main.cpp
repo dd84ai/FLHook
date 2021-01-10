@@ -1416,6 +1416,11 @@ void __stdcall PlayerLaunch(unsigned int ship, unsigned int client)
 	if (set_plugin_debug > 1)
 		ConPrint(L"PlayerLaunch ship=%u client=%u\n", ship, client);
 	player_launch_base = GetPlayerBase(clients[client].last_player_base);
+
+	//Unloading conn storage bases when player exits
+	PlayerBase* baseObj = GetPlayerBase(clients[client].last_player_base);
+	if (baseObj != 0 && baseObj->is_it_storage)
+		UnloadBase(baseObj);
 }
 
 
